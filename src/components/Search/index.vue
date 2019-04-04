@@ -19,11 +19,18 @@
                     </div>
                 </li> -->
                 <li v-for="item in moviesList" :key="item.id">
-                    <div class="img"><img :src=" item.img | setWH('128.180') "></div>
+                    <div class="img"><img :src=" item.img | setWH('128.180') ">
+                    </div>
                     <div class="info">
-                        <p><span>{{ item.nm }}</span><span>{{ item.sc }}</span></p>
+                        <p>
+                            <span>{{ item.nm }}</span>
+                            <span>{{ item.sc }}</span>
+                        </p>
+                        <!-- 影片英文名  enm-->
                         <p>{{ item.enm }}</p>
+                        <!-- 影片剧情 cat -->
                         <p>{{ item.cat }}</p>
+                        <!-- 上映日期 rt -->
                         <p>{{ item.rt }}</p>
                     </div>
                 </li>
@@ -34,11 +41,56 @@
 
 <script>
 export default {
-    name: 'Search'
+    name : 'Search',
+    data(){
+        return {
+            message : '',
+            moviesList : []
+        }
+    },
+
+    // 这个时候不能在mounted()中写了，因为搜索是在input 中输入后才可以搜索的
+
+    methods : {
+        cancelRequest(){
+            if(typeof this.source ==='function'){
+                this.source('终止请求')
+            }
+        }
+    },
+    watch : {
+        // watch中可以允许做异步的操作的
+        message(newVal){
+            var that = this;
+            var cityId = this.$store.state.city.id;
+
+            // 该方法 是 axios 的一个方法,用于 当请求频繁时 取消上一次请求
+            this.cancelRequest();            
+            this.axios.get('/api/searchList?cityId='+ cityId +'&kw='+newVal,{
+                cancelToken: new this.axios.CancelToken(function(c){
+                    that.source = c;
+                })
+            }).then((res)=>{
+                var msg = res.data.msg;
+                var movies = res.data.data.movies;
+                // 有搜索内容 并有 电影存在， 才有搜索结果
+                if(msg && movies){
+                    this.moviesList = res.data.data.movies.list;
+                }
+            }).catch((err) => {
+                if (this.axios.isCancel(err)) {
+                    console.log('Rquest canceled', err.message); //请求如果被取消，这里是返回取消的message
+                } else {
+                    //handle error
+                    console.log(err);
+                }
+            });
+        }
+    }
 }
 </script>
 
-<style scoped>
+<style>
 #content .search_body{ flex:1; overflow:auto;}
 .search_body .search_input{ padding: 8px 10px; background-color: #f5f5f5; border-bottom: 1px solid #e5e5e5;}
 .search_body .search_input_wrapper{ padding: 0 10px; border: 1px solid #e6e6e6; border-radius: 5px; background-color: #fff; display: flex; line-height: 20px;}

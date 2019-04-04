@@ -17,9 +17,15 @@
                 </li> -->
                 <li class="pullDown">{{ pullDownMsg }}</li>
                 <li v-for="item in movieList" :key="item.id">
-                    <div class="pic_show" @tap="handleToDetail(item.id)"><img :src="item.img | setWH('128.180')"></div>
+                    <!-- setWH()过滤器,定义在main.js中 -->
+                    <div class="pic_show" @tap="handleToDetail(item.id)"><img :src="item.img | setWH('128.180')">
+                    </div>
                     <div class="info_list">
-                        <h2 @tap="handleToDetail(item.id)">{{ item.nm }} <img v-if="item.version" src="@/assets/maxs.png" alt=""></h2>
+                        <!-- 当有 item.version时，才有maxs.png图片 -->
+                        <h2 @tap="handleToDetail(item.id)">{{ item.nm }} <img v-if="item.version" src="@/assets/maxs.png" alt="">
+                        </h2>
+
+                        <!-- 观众评分sc -->
                         <p>观众评 <span class="grade">{{ item.sc }}</span></p>
                         <p>主演: {{ item.star }}</p>
                         <p>{{ item.showInfo }}</p>
@@ -34,8 +40,92 @@
 </template>
 
 <script>
+
+//import BScroll from 'better-scroll';
+
 export default {
-    name: 'NowPlaying'
+    name : 'NowPlaying',
+    data(){
+        return {
+            movieList : [],
+            pullDownMsg : '',
+            isLoading : true,
+            prevCityId : -1
+        }
+    },
+    activated(){
+        var cityId = this.$store.state.city.id;
+        if( this.prevCityId === cityId ){ return; }
+        this.isLoading = true;
+        this.axios.get('/api/movieOnInfoList?cityId='+cityId).then((res)=>{
+            var msg = res.data.msg;
+            if( msg === 'ok' ){
+                this.movieList = res.data.data.movieList;
+                this.isLoading = false;
+                this.prevCityId = cityId;
+                /* this.$nextTick(()=>{
+                    var scroll = new BScroll( this.$refs.movie_body , {
+                        tap : true,
+                        probeType: 1
+                    });
+
+                    scroll.on('scroll',(pos)=>{
+                        //console.log('scroll');
+                        if( pos.y > 30 ){
+                            this.pullDownMsg = '正在更新中';
+                        }
+
+                    });
+
+                    scroll.on('touchEnd',(pos)=>{
+                        //console.log('touchend');
+                        if( pos.y > 30 ){
+                            this.axios.get('/api/movieOnInfoList?cityId=11').then((res)=>{
+                                var msg = res.data.msg;
+                                if( msg === 'ok' ){
+                                    this.pullDownMsg = '更新成功';
+                                    setTimeout(()=>{
+                                        this.movieList = res.data.data.movieList;
+                                        this.pullDownMsg = '';
+                                    },1000);
+
+                                }
+                            });
+
+                        }
+                    });
+
+                }); */
+
+            }
+        });
+    },
+    methods : {
+        handleToDetail(movieId){
+            //console.log(movieId);
+            this.$router.push('/movie/detail/1/' + movieId);
+        },
+        handleToScroll(pos){
+            if( pos.y > 30 ){
+                this.pullDownMsg = '正在更新中';
+            }
+        },
+        handleToTouchEnd(pos){
+            if( pos.y > 30 ){
+                this.axios.get('/api/movieOnInfoList?cityId=11').then((res)=>{
+                    var msg = res.data.msg;
+                    if( msg === 'ok' ){
+                        this.pullDownMsg = '更新成功';
+                        setTimeout(()=>{
+                            this.movieList = res.data.data.movieList;
+                            this.pullDownMsg = '';
+                        },1000);
+
+                    }
+                });
+            }
+        }
+    }
 }
 </script>
 
